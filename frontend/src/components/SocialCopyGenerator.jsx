@@ -103,7 +103,8 @@ export default function SocialCopyGenerator() {
     if (!apiKey) { setError("請先輸入 API Key"); return; }
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/generate`, {
+      const res = await fetch(`${API_BASE}/api/generate`, {
+
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ provider, model, prompt, apiKey }),
