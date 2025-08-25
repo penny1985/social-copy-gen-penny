@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-/** åŒç¶²åŸŸå‘¼å«ï¼Œä¿æŒç©ºå­—ä¸²å³å¯ */
+/** ¦Pºô°ì©I¥s¡A«O«ùªÅ¦r¦ê§Y¥i */
 const API_BASE = "";
 
 export default function SocialCopyGenerator() {
@@ -26,12 +26,7 @@ export default function SocialCopyGenerator() {
       const res = await fetch(`${API_BASE}/api/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          provider,
-          model,
-          prompt,
-          apiKey,
-        }),
+        body: JSON.stringify({ provider, model, prompt, apiKey }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Request failed");
@@ -47,14 +42,14 @@ export default function SocialCopyGenerator() {
     <div className="min-h-screen px-6 py-8 max-w-5xl mx-auto">
       <header className="mb-6">
         <h1 className="text-2xl font-bold">Social Copy Generator</h1>
-        <p className="text-sm opacity-70">OpenAI / Geminiï¼Œä½¿ç”¨è€…è‡ªå¸¶ API Key</p>
+        <p className="text-sm opacity-70">OpenAI / Gemini¡A¨Ï¥ÎªÌ¦Û±a API Key</p>
       </header>
 
       <div className="grid md:grid-cols-3 gap-6">
-        {/* è¨­å®šå€ */}
+        {/* ³]©w°Ï */}
         <aside className="md:col-span-1 space-y-4">
           <div>
-            <label className="block text-sm mb-1">ä¾›æ‡‰å•†</label>
+            <label className="block text-sm mb-1">¨ÑÀ³°Ó</label>
             <select
               value={provider}
               onChange={(e) => handleProviderChange(e.target.value)}
@@ -66,7 +61,7 @@ export default function SocialCopyGenerator() {
           </div>
 
           <div>
-            <label className="block text-sm mb-1">æ¨¡å‹</label>
+            <label className="block text-sm mb-1">¼Ò«¬</label>
             <select
               value={model}
               onChange={(e) => setModel(e.target.value)}
@@ -79,7 +74,7 @@ export default function SocialCopyGenerator() {
           </div>
 
           <div>
-            <label className="block text-sm mb-1">ä½ çš„ API Key</label>
+            <label className="block text-sm mb-1">§Aªº API Key</label>
             <input
               type="password"
               placeholder={provider === "OpenAI" ? "sk-..." : "AIza..."}
@@ -90,13 +85,38 @@ export default function SocialCopyGenerator() {
           </div>
         </aside>
 
-        {/* è¼¸å…¥èˆ‡çµæœ */}
+        {/* ¿é¤J»Pµ²ªG */}
         <main className="md:col-span-2 space-y-4">
           <div>
-            <label className="block text-sm mb-1">ä½ çš„ Prompt</label>
+            <label className="block text-sm mb-1">§Aªº Prompt</label>
             <textarea
               rows={8}
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="åœ¨é€™è£¡è²¼ä¸Šæˆ–ç·¨å¯«ä½ çš„ prompt..."
-              classNam
+              placeholder="¦b³o¸Ì¶K¤W©Î½s¼g§Aªº prompt..."
+              className="w-full border rounded px-3 py-2"
+            />
+          </div>
+
+          <button
+            onClick={handleGenerate}
+            disabled={loading || !apiKey || !prompt}
+            className="px-4 py-2 rounded border font-medium disabled:opacity-50"
+          >
+            {loading ? "¥Í¦¨¤¤..." : "¥Í¦¨¤å®×"}
+          </button>
+
+          <div>
+            <label className="block text-sm mb-1">¿é¥X</label>
+            <textarea
+              readOnly
+              rows={12}
+              value={output}
+              className="w-full border rounded px-3 py-2"
+            />
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
