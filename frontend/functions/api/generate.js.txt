@@ -1,0 +1,85 @@
+// Cloudflare Pages Functions：/api/generate
+export async function onRequestOptions() {
+  return new Response(null, { status: 204, headers: corsHeaders() });
+}
+
+export async function onRequestPost({ request }) {
+  const url = new URL(request.url);
+
+  // CORS
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: corsHeaders() });
+  }
+
+  let payload;
+  try {
+    payload = await request.json();
+  } catch {
+    return json({ error: 'Invalid JSON' }, 400);
+  }
+
+  const { provider, model, prompt, apiKey } = payload || {};
+  if (!provider || !model || !prompt || !apiKey) {
+    return json({ error: 'Missing provider/model/prompt/apiKey' }, 400);
+  }
+
+  try {
+    if (provider === 'OpenAI') {
+      const r = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: 'You are a helpful social copywriter.' },
+            { role: 'user', content: prompt },
+          ],
+          temperature: 0.8,
+        }),
+      });
+      const data = await r.json();
+      const text = data.choices?.[0]?.message?.content ?? '';
+      return json({ provider, model, text, raw: data });
+    }
+
+    if (provider === 'Gemini') {
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.8 },
+          }),
+        }
+      );
+      const data = await r.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+      return json({ provider, model, text, raw: data });
+    }
+
+    return json({ error: 'Unsupported provider' }, 400);
+  } catch (e) {
+    return json({ error: String(e) }, 500);
+  }
+}
+
+function json(obj, status = 200) {
+  return new Response(JSON.stringify(obj), {
+    status,
+    headers: corsHeaders({ 'Content-Type': 'application/json' }),
+  });
+}
+
+function corsHeaders(extra = {}) {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    ...extra,
+  };
+}
