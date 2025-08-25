@@ -1,11 +1,10 @@
-import React, { useMemo, useState } from "react";
+ï»¿import React, { useMemo, useState } from "react";
 
-/** ¨«¦Pºô°ì API¡]Cloudflare Pages Functions¡^¡A«O«ùªÅ¦r¦ê */
+/** èµ°åŒç¶²åŸŸ APIï¼ˆCloudflare Pages Functionsï¼‰ï¼Œä¿æŒç©ºå­—ä¸² */
 const API_BASE = "";
 
-/** Â²³æ¤º«Ø¼Ë¦¡¡]Á×§K¨Ì¿à Tailwind ³y¦¨ª©­±©Ç©Î¶Ã½X¡^ */
 const S = {
-  page: { fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Arial", color: "#1a1a1a" },
+  page: { fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Arial", color: "#1a1a1a", background:"#F4EEDF" },
   container: { maxWidth: 1100, margin: "0 auto", padding: "24px" },
   h1: { fontSize: 22, fontWeight: 700, marginBottom: 8 },
   sub: { opacity: 0.7, marginBottom: 20, fontSize: 13 },
@@ -18,7 +17,7 @@ const S = {
   select: { width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #ddd", fontSize: 14, background: "#fff" },
   row: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 },
   row3: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 },
-  btn: { padding: "10px 14px", borderRadius: 10, border: "1px solid #0f5132", background: "#11694a", color: "#fff", cursor: "pointer", fontWeight: 600 },
+  btn: { padding: "10px 14px", borderRadius: 10, border: "1px solid #8A7A3F", background: "#1B6B4B", color: "#fff", cursor: "pointer", fontWeight: 600 },
   btnGhost: { padding: "10px 14px", borderRadius: 10, border: "1px solid #ddd", background: "#fff", color: "#333", cursor: "pointer", fontWeight: 600 },
   badge: { display: "inline-block", padding: "2px 8px", borderRadius: 999, fontSize: 12, border: "1px solid #ddd" },
   output: { width: "100%", minHeight: 240, whiteSpace: "pre-wrap", border: "1px solid #ddd", borderRadius: 12, padding: 12, background: "#fafafa", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace", fontSize: 13 },
@@ -27,240 +26,198 @@ const S = {
 const OPENAI_MODELS = ["gpt-4o-mini", "gpt-4o", "gpt-4.1-mini"];
 const GEMINI_MODELS = ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-1.0-pro"];
 const FRAMEWORKS = ["AIDA", "PAS", "4P", "Story", "Problem-Agitate-Solve", "Before-After-Bridge"];
-const TONES = ["·Å·x", "±M·~", "«N¥Ö", "Åv«Â", "¼ö¦å", "ÀøÂ¡", "¤¤¥ß"];
-const PLATFORMS = ["Facebook", "Instagram", "Threads", "LinkedIn", "X(Twitter)", "¤p¬õ®Ñ", "TikTok"];
-const LANGS = ["Ác¤¤", "Â²¤¤", "­^¤å", "¤é¤å"];
+const TONES = ["æº«æš–", "å°ˆæ¥­", "ä¿çš®", "æ¬Šå¨", "ç†±è¡€", "ç™‚ç™’", "ä¸­ç«‹"];
+const PLATFORMS = ["Facebook", "Instagram", "Threads", "LinkedIn", "X(Twitter)", "å°ç´…æ›¸", "TikTok"];
+const LANGS = ["ç¹ä¸­", "ç°¡ä¸­", "è‹±æ–‡", "æ—¥æ–‡"];
 
 export default function SocialCopyGenerator() {
-  // ¨ÑÀ³°Ó/¼Ò«¬/API Key
   const [provider, setProvider] = useState("OpenAI");
   const [model, setModel] = useState(OPENAI_MODELS[0]);
   const [apiKey, setApiKey] = useState("");
 
-  // «~µP/¨ü²³/½Õ©Êµ¥
-  const [brand, setBrand] = useState("Penny ºñª÷¦Ì");
-  const [audience, setAudience] = useState("25-40 ·³ª`­«¥ÃÄò»P¬ü·Pªº¥Õ»â±Ú¸s");
+  const [brand, setBrand] = useState("Penny ç¶ é‡‘ç±³");
+  const [audience, setAudience] = useState("25-40 æ­²æ³¨é‡æ°¸çºŒèˆ‡ç¾æ„Ÿçš„ç™½é ˜æ—ç¾¤");
   const [platform, setPlatform] = useState(PLATFORMS[0]);
-  const [tone, setTone] = useState("·Å·x¡B±M·~¡BÀu¶®");
-  const [language, setLanguage] = useState("Ác¤¤");
-  const [goal, setGoal] = useState("´£¤É«~µP¦n·P»P¦¬ÂÃ¡A¦¸­n¥Ø¼Ğ¾É¬y©xºô");
+  const [tone, setTone] = useState("æº«æš–ã€å°ˆæ¥­ã€å„ªé›…");
+  const [language, setLanguage] = useState("ç¹ä¸­");
+  const [goal, setGoal] = useState("æå‡å“ç‰Œå¥½æ„Ÿèˆ‡æ”¶è—ï¼Œæ¬¡è¦ç›®æ¨™å°æµå®˜ç¶²");
   const [framework, setFramework] = useState("AIDA");
-  const [length, setLength] = useState("¤¤µ¥¡]120-200¦r¡^");
+  const [length, setLength] = useState("ä¸­ç­‰ï¼ˆ120-200å­—ï¼‰");
 
-  // ?®e¤¸¯À
-  const [writerPersona, setWriterPersona] = useState("«~µP¤å®×Á`ºÊ¡A¾Õªø±N»ù­ÈÆ[ÂàÄ¶¬°¤é±`»y¨¥");
-  const [storyChars, setStoryChars] = useState("¥D¨¤¡G¤p¦Ì¡]«~µP¯»µ·¡^¡A°t¨¤¡Gª¨¶ı¡B¦P¨Æ");
-  const [socialIssue, setSocialIssue] = useState("¤é±`´î¶ì¡B¤Íµ½¹Aªk¡BºÒ¨¬¸ñ");
-  const [keyMessages, setKeyMessages] = useState("¦Ì­»¯Â²b¡B²£¦a³z©ú¡B¤Íµ½¯Ñ§@¡B¹ï¤g¦a·Å¬X");
-  const [keywords, setKeywords] = useState("ºñ¦â¥Í¬¡¡B§CºÒ¶¼­¹¡BµL²K¥[¡B²£¦aª½°e");
+  const [writerPersona, setWriterPersona] = useState("å“ç‰Œæ–‡æ¡ˆç¸½ç›£ï¼Œæ“…é•·å°‡åƒ¹å€¼è§€è½‰è­¯ç‚ºæ—¥å¸¸èªè¨€");
+  const [storyChars, setStoryChars] = useState("ä¸»è§’ï¼šå°ç±³ï¼ˆå“ç‰Œç²‰çµ²ï¼‰ï¼Œé…è§’ï¼šçˆ¸åª½ã€åŒäº‹");
+  const [socialIssue, setSocialIssue] = useState("æ—¥å¸¸æ¸›å¡‘ã€å‹å–„è¾²æ³•ã€ç¢³è¶³è·¡");
+  const [keyMessages, setKeyMessages] = useState("ç±³é¦™ç´”æ·¨ã€ç”¢åœ°é€æ˜ã€å‹å–„è€•ä½œã€å°åœŸåœ°æº«æŸ”");
+  const [keywords, setKeywords] = useState("ç¶ è‰²ç”Ÿæ´»ã€ä½ç¢³é£²é£Ÿã€ç„¡æ·»åŠ ã€ç”¢åœ°ç›´é€");
 
-  // ªş¥[±±¨î
-  const [cta, setCta] = useState("ÂIÀ»¦¬ÂÃ¡A¥[¤Jºñ¥Í¬¡ ??");
+  const [cta, setCta] = useState("é»æ“Šæ”¶è—ï¼ŒåŠ å…¥ç¶ ç”Ÿæ´» â˜˜ï¸");
   const [hashtagCount, setHashtagCount] = useState(5);
   const [useEmoji, setUseEmoji] = useState(true);
   const [variants, setVariants] = useState(2);
 
-  // ¦Û­q Prompt¡]¥iª½±µÂĞ»\¡^
   const [customPrompt, setCustomPrompt] = useState("");
-
-  // µ²ªG/ª¬ºA
   const [preview, setPreview] = useState("");
   const [output, setOutput] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // ¨ÑÀ³°Ó¤Á´«®É¦Û°Ê´«¼Ò«¬
-  const handleProvider = (p) => {
-    setProvider(p);
-    setModel(p === "OpenAI" ? OPENAI_MODELS[0] : GEMINI_MODELS[0]);
-  };
+  const handleProvider = (p) => { setProvider(p); setModel(p === "OpenAI" ? OPENAI_MODELS[0] : GEMINI_MODELS[0]); };
 
-  // ²Õ¸Ë Prompt
   const builtPrompt = useMemo(() => {
     if (customPrompt.trim()) return customPrompt.trim();
     const parts = [
-      `§A¬O¡G${writerPersona}`,
-      `«~µP¡G${brand}¡F¥­¥x¡G${platform}¡F½Õ©Ê¡G${tone}¡F»y¨¥¡G${language}`,
-      `¥Ø¼Ğ¡G${goal}¡F®Ø¬[¡G${framework}¡F½g´T¡G${length}`,
-      `¨ü²³¡G${audience}`,
-      `¬G¨Æ¨¤¦â¡G${storyChars || "¡]¥i¦Û¦æ¸É§¹¡^"}`,
-      `ªÀ·|Ä³ÃD¡]¥i»´Ä²¡^¡G${socialIssue || "¡]­Y¤£¦X¾A¥i²¤¹L¡^"}`,
-      `ÃöÁä°T®§¡G${keyMessages}`,
-      `ÃöÁä¦r¡G${keywords}`,
-      `CTA¡G${cta}`,
-      `®æ¦¡­n¨D¡G½Ğ²£¥X ${variants} «h¶K¤åÅÜÅé¡FÁ×§K¯B¸Ø»PÂåÀø/»~¾É©Ó¿Õ¡F¾A«×¨Ï¥Î${useEmoji ? "ªí±¡²Å¸¹" : "¤£¨Ï¥Îªí±¡²Å¸¹"}¡Fªş¤W ${hashtagCount} ­Óºë·Ç hashtag¡F¨C«h¿W¥ß§e²{¡C`,
-      `¿é¥Xµ²ºc¡G\n- ¼ĞÃD\n- ¤º¤å¡]¨Ì ${framework} µ²ºc¡^\n- Hashtags`,
+      `ä½ æ˜¯ï¼š${writerPersona}`,
+      `å“ç‰Œï¼š${brand}ï¼›å¹³å°ï¼š${platform}ï¼›èª¿æ€§ï¼š${tone}ï¼›èªè¨€ï¼š${language}`,
+      `ç›®æ¨™ï¼š${goal}ï¼›æ¡†æ¶ï¼š${framework}ï¼›ç¯‡å¹…ï¼š${length}`,
+      `å—çœ¾ï¼š${audience}`,
+      `æ•…äº‹è§’è‰²ï¼š${storyChars || "ï¼ˆå¯è‡ªè¡Œè£œå®Œï¼‰"}`,
+      `ç¤¾æœƒè­°é¡Œï¼ˆå¯è¼•è§¸ï¼‰ï¼š${socialIssue || "ï¼ˆè‹¥ä¸åˆé©å¯ç•¥éï¼‰"}`,
+      `é—œéµè¨Šæ¯ï¼š${keyMessages}`,
+      `é—œéµå­—ï¼š${keywords}`,
+      `CTAï¼š${cta}`,
+      `æ ¼å¼è¦æ±‚ï¼šè«‹ç”¢å‡º ${variants} å‰‡è²¼æ–‡è®Šé«”ï¼›é¿å…æµ®èª‡èˆ‡é†«ç™‚/èª¤å°æ‰¿è«¾ï¼›é©åº¦ä½¿ç”¨${useEmoji ? "è¡¨æƒ…ç¬¦è™Ÿ" : "ä¸ä½¿ç”¨è¡¨æƒ…ç¬¦è™Ÿ"}ï¼›é™„ä¸Š ${hashtagCount} å€‹ç²¾æº– hashtagï¼›æ¯å‰‡ç¨ç«‹å‘ˆç¾ã€‚`,
+      `è¼¸å‡ºçµæ§‹ï¼š\n- æ¨™é¡Œ\n- å…§æ–‡ï¼ˆä¾ ${framework} çµæ§‹ï¼‰\n- Hashtags`,
     ];
     return parts.join("\n");
   }, [writerPersona, brand, platform, tone, language, goal, framework, length, audience, storyChars, socialIssue, keyMessages, keywords, cta, variants, useEmoji, hashtagCount, customPrompt]);
 
-  function doPreview() {
-    setPreview(builtPrompt);
-  }
-
   async function handleGenerate() {
-    setLoading(true);
-    setOutput("");
+    setLoading(true); setOutput("");
     try {
       const res = await fetch(`${API_BASE}/api/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          provider,
-          model,
-          apiKey,
-          prompt: builtPrompt + "\n\n½Ğ¿í´`¿é¥Xµ²ºc¡AÅÜÅé¶¡¥Î¡y---¡z¤À¹j¡C",
-        }),
+        body: JSON.stringify({ provider, model, apiKey, prompt: builtPrompt + "\n\nè«‹éµå¾ªè¼¸å‡ºçµæ§‹ï¼Œè®Šé«”é–“ç”¨ã€---ã€åˆ†éš”ã€‚" }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "½Ğ¨D¥¢±Ñ");
+      if (!res.ok) throw new Error(data?.error || "è«‹æ±‚å¤±æ•—");
       setOutput(data?.text || JSON.stringify(data?.raw, null, 2));
     } catch (e) {
       setOutput("Error: " + e.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function copyToClipboard(text) {
-    navigator.clipboard?.writeText(text);
+    } finally { setLoading(false); }
   }
 
   return (
     <div style={S.page}>
       <div style={S.container}>
-        <h1 style={S.h1}>Social Copy Generator¡]§¹¾ãªí³æ¡^</h1>
-        <div style={S.sub}>OpenAI / Gemini¡]¨Ï¥ÎªÌ¦Û±a API Key¡^¡Cºñª÷¦Ì°t¦â¨«Â²¼ä°ª¶®¡G¤º«Ø²`ºñ«ö¶s»P²L¦â­I´º¡C</div>
+        <h1 style={S.h1}>Social Copy Generatorï¼ˆå®Œæ•´è¡¨å–®ï¼‰</h1>
+        <div style={S.sub}>OpenAI / Geminiï¼ˆä½¿ç”¨è€…è‡ªå¸¶ API Keyï¼‰ã€‚ç¶ é‡‘ç±³é…è‰²ï¼šç±³ç™½èƒŒæ™¯ã€æ·±ç¶ ä¸»è‰²ã€é‡‘è‰²ç·šæ¡†ã€‚</div>
 
-        {/* ¨ÑÀ³°Ó / ¼Ò«¬ / Key */}
         <div style={{...S.card, marginBottom: 16}}>
           <div style={S.row3}>
             <div>
-              <div style={S.label}>¨ÑÀ³°Ó</div>
+              <div style={S.label}>ä¾›æ‡‰å•†</div>
               <select value={provider} onChange={(e)=>handleProvider(e.target.value)} style={S.select}>
-                <option>OpenAI</option>
-                <option>Gemini</option>
+                <option>OpenAI</option><option>Gemini</option>
               </select>
             </div>
             <div>
-              <div style={S.label}>¼Ò«¬</div>
+              <div style={S.label}>æ¨¡å‹</div>
               <select value={model} onChange={(e)=>setModel(e.target.value)} style={S.select}>
                 {(provider==="OpenAI"?OPENAI_MODELS:GEMINI_MODELS).map(m=> <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
             <div>
-              <div style={S.label}>§Aªº API Key</div>
+              <div style={S.label}>ä½ çš„ API Key</div>
               <input type="password" placeholder={provider==="OpenAI"?"sk-...":"AIza..."} value={apiKey} onChange={(e)=>setApiKey(e.target.value)} style={S.input}/>
             </div>
           </div>
         </div>
 
-        {/* ¥D­nªí³æ */}
         <div style={S.grid}>
           <div style={S.col}>
             <div style={S.card}>
-              <div style={S.label}>«~µP¦WºÙ</div>
+              <div style={S.label}>å“ç‰Œåç¨±</div>
               <input value={brand} onChange={(e)=>setBrand(e.target.value)} style={S.input}/>
-              <div style={S.label}>¨ü²³´y­z</div>
+              <div style={S.label}>å—çœ¾æè¿°</div>
               <input value={audience} onChange={(e)=>setAudience(e.target.value)} style={S.input}/>
               <div style={S.row}>
                 <div>
-                  <div style={S.label}>¥­¥x</div>
+                  <div style={S.label}>å¹³å°</div>
                   <select value={platform} onChange={(e)=>setPlatform(e.target.value)} style={S.select}>
                     {PLATFORMS.map(p=><option key={p} value={p}>{p}</option>)}
                   </select>
                 </div>
                 <div>
-                  <div style={S.label}>»y¨¥</div>
+                  <div style={S.label}>èªè¨€</div>
                   <select value={language} onChange={(e)=>setLanguage(e.target.value)} style={S.select}>
                     {LANGS.map(l=><option key={l} value={l}>{l}</option>)}
                   </select>
                 </div>
               </div>
-
-              <div style={S.label}>¤å®×½Õ©Ê</div>
-              <input value={tone} onChange={(e)=>setTone(e.target.value)} style={S.input} placeholder="¨Ò¡G·Å·x¡B±M·~¡BÀu¶®"/>
-
-              <div style={S.label}>¥Ø¼Ğ¡]¥D/¦¸¡^</div>
-              <input value={goal} onChange={(e)=>setGoal(e.target.value)} style={S.input} placeholder="¨Ò¡G´£¤É¦¬ÂÃ/¤¬°Ê¡B¾É¬y©xºô"/>
-
+              <div style={S.label}>æ–‡æ¡ˆèª¿æ€§</div>
+              <input value={tone} onChange={(e)=>setTone(e.target.value)} style={S.input}/>
+              <div style={S.label}>ç›®æ¨™ï¼ˆä¸»/æ¬¡ï¼‰</div>
+              <input value={goal} onChange={(e)=>setGoal(e.target.value)} style={S.input}/>
               <div style={S.row}>
                 <div>
-                  <div style={S.label}>®Ø¬[</div>
+                  <div style={S.label}>æ¡†æ¶</div>
                   <select value={framework} onChange={(e)=>setFramework(e.target.value)} style={S.select}>
                     {FRAMEWORKS.map(f=><option key={f} value={f}>{f}</option>)}
                   </select>
                 </div>
                 <div>
-                  <div style={S.label}>½g´T</div>
-                  <input value={length} onChange={(e)=>setLength(e.target.value)} style={S.input} placeholder="µu/¤¤/ªø ©Î¦r¼Æ½d³ò"/>
+                  <div style={S.label}>ç¯‡å¹…</div>
+                  <input value={length} onChange={(e)=>setLength(e.target.value)} style={S.input}/>
                 </div>
               </div>
             </div>
 
             <div style={S.card}>
-              <div style={S.label}>¼g¤â¨­¤À¡]¨t²Î´£¥Ü¡^</div>
+              <div style={S.label}>å¯«æ‰‹èº«åˆ†ï¼ˆç³»çµ±æç¤ºï¼‰</div>
               <input value={writerPersona} onChange={(e)=>setWriterPersona(e.target.value)} style={S.input}/>
-
-              <div style={S.label}>¬G¨Æ¨¤¦â¡]¥i¿ï¡^</div>
+              <div style={S.label}>æ•…äº‹è§’è‰²ï¼ˆå¯é¸ï¼‰</div>
               <input value={storyChars} onChange={(e)=>setStoryChars(e.target.value)} style={S.input}/>
-
-              <div style={S.label}>ªÀ·|Ä³ÃD¡]¥i¿ï¡^</div>
+              <div style={S.label}>ç¤¾æœƒè­°é¡Œï¼ˆå¯é¸ï¼‰</div>
               <input value={socialIssue} onChange={(e)=>setSocialIssue(e.target.value)} style={S.input}/>
             </div>
           </div>
 
           <div style={S.col}>
             <div style={S.card}>
-              <div style={S.label}>ÃöÁä°T®§</div>
+              <div style={S.label}>é—œéµè¨Šæ¯</div>
               <textarea rows={5} value={keyMessages} onChange={(e)=>setKeyMessages(e.target.value)} style={S.textarea}/>
-              <div style={S.label}>ÃöÁä¦r¡]³r¸¹¤À¹j¡^</div>
+              <div style={S.label}>é—œéµå­—ï¼ˆé€—è™Ÿåˆ†éš”ï¼‰</div>
               <input value={keywords} onChange={(e)=>setKeywords(e.target.value)} style={S.input}/>
-
               <div style={S.row}>
                 <div>
-                  <div style={S.label}>Hashtag ¼Æ¶q</div>
+                  <div style={S.label}>Hashtag æ•¸é‡</div>
                   <input type="number" min={0} max={15} value={hashtagCount} onChange={(e)=>setHashtagCount(Number(e.target.value)||0)} style={S.input}/>
                 </div>
                 <div>
-                  <div style={S.label}>ÅÜÅé¼Æ</div>
+                  <div style={S.label}>è®Šé«”æ•¸</div>
                   <input type="number" min={1} max={6} value={variants} onChange={(e)=>setVariants(Number(e.target.value)||1)} style={S.input}/>
                 </div>
               </div>
-
               <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:8 }}>
-                <span style={S.badge}>ªí±¡²Å¸¹¡G{useEmoji?"¶}":"Ãö"}</span>
+                <span style={S.badge}>è¡¨æƒ…ç¬¦è™Ÿï¼š{useEmoji?"é–‹":"é—œ"}</span>
                 <label style={{display:"inline-flex", alignItems:"center", gap:6, cursor:"pointer"}}>
-                  <input type="checkbox" checked={useEmoji} onChange={(e)=>setUseEmoji(e.target.checked)}/>
-                  ¤¹³\¨Ï¥Î Emoji
+                  <input type="checkbox" checked={useEmoji} onChange={(e)=>setUseEmoji(e.target.checked)}/> å…è¨±ä½¿ç”¨ Emoji
                 </label>
               </div>
             </div>
 
             <div style={S.card}>
-              <div style={S.label}>¦Û­q Prompt¡]¥i¯d¥Õ¨Ï¥Î¤W­±ªí³æ¦Û°Ê²£¥X¡^</div>
-              <textarea rows={6} value={customPrompt} onChange={(e)=>setCustomPrompt(e.target.value)} style={S.textarea} placeholder="­Y¶ñ¼g¡A±NÂĞ»\¤W¤èªí³æ¡Aª½±µ¥Î¦¹ Prompt ¥Í¦¨"/>
+              <div style={S.label}>è‡ªè¨‚ Promptï¼ˆå¯ç•™ç™½ä½¿ç”¨ä¸Šé¢è¡¨å–®è‡ªå‹•ç”¢å‡ºï¼‰</div>
+              <textarea rows={6} value={customPrompt} onChange={(e)=>setCustomPrompt(e.target.value)} style={S.textarea} placeholder="è‹¥å¡«å¯«ï¼Œå°‡è¦†è“‹ä¸Šæ–¹è¡¨å–®ï¼Œç›´æ¥ç”¨æ­¤ Prompt ç”Ÿæˆ"/>
               <div style={{ display:"flex", gap:10, marginTop:10 }}>
-                <button onClick={doPreview} style={S.btnGhost}>¹wÄı Prompt</button>
-                <button onClick={()=>copyToClipboard(builtPrompt)} style={S.btnGhost}>½Æ»s Prompt</button>
+                <button onClick={()=>setPreview(builtPrompt)} style={S.btnGhost}>é è¦½ Prompt</button>
+                <button onClick={()=>navigator.clipboard?.writeText(builtPrompt)} style={S.btnGhost}>è¤‡è£½ Prompt</button>
               </div>
-              {preview && (
-                <div style={{...S.output, marginTop:10}}>{preview}</div>
-              )}
+              {preview && (<div style={{...S.output, marginTop:10}}>{preview}</div>)}
             </div>
           </div>
         </div>
 
-        {/* °Ê§@ / ¿é¥X */}
         <div style={{ display:"flex", gap:12, marginTop:16 }}>
           <button onClick={handleGenerate} disabled={loading || !apiKey} style={{...S.btn, opacity: (loading||!apiKey)?0.6:1}}>
-            {loading ? "¥Í¦¨¤¤¡K" : "¥Í¦¨¤å®×"}
+            {loading ? "ç”Ÿæˆä¸­â€¦" : "ç”Ÿæˆæ–‡æ¡ˆ"}
           </button>
-          <button onClick={()=>copyToClipboard(output)} disabled={!output} style={{...S.btnGhost, opacity: output?1:0.6}}>½Æ»s¿é¥X</button>
+          <button onClick={()=>navigator.clipboard?.writeText(output)} disabled={!output} style={{...S.btnGhost, opacity: output?1:0.6}}>è¤‡è£½è¼¸å‡º</button>
         </div>
 
         <div style={{...S.card, marginTop:16}}>
-          <div style={{...S.label, marginBottom:8}}>¿é¥X</div>
-          <div style={S.output}>{output || "¡]¥Í¦¨¤º®e·|¥X²{¦b³o¸Ì¡^"}</div>
+          <div style={{...S.label, marginBottom:8}}>è¼¸å‡º</div>
+          <div style={S.output}>{output || "ï¼ˆç”Ÿæˆå…§å®¹æœƒå‡ºç¾åœ¨é€™è£¡ï¼‰"}</div>
         </div>
       </div>
     </div>
