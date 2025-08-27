@@ -1,6 +1,6 @@
 ﻿import React, { useMemo, useState, useEffect } from "react";
 
-/** 純前端 Prompt Builder（無模型串接）— 手機優化、名詞解釋、原型預設、單選規則 */
+/** 純前端 Prompt Builder（手機優化、名詞解釋、原型預設、單選規則、平台篇幅選單、主題欄位） */
 const BRAND_BYLINE = "陳沛孺《用AI打造素人影響力》作者";
 
 /* =============================== 內嵌 CSS =============================== */
@@ -21,14 +21,14 @@ const CSS = `
 .card{border:1px solid var(--line);border-radius:12px;padding:16px;background:#fff}
 .labelRow{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .label{font-size:13px;opacity:.9}
-.info{font-size:12px;opacity:.65}
+.info{opacity:.7;font-size:12px}
 .input,.select,.textarea{width:100%;padding:10px 12px;border-radius:8px;border:1px solid #ddd;font-size:15px;background:#fff}
 .textarea{resize:vertical}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
 .output{width:100%;min-height:260px;white-space:pre-wrap;border:1px solid #ddd;border-radius:12px;padding:12px;background:#fafafa;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
 
-/* chips（僅保留活動情境） */
+/* chips（仍保留活動情境多選） */
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{border:1px solid #ddd;background:#fff;border-radius:999px;padding:8px 12px;font-size:14px;cursor:pointer;user-select:none;line-height:1}
 .chip[aria-pressed="true"]{background:#e9f3ee;border-color:var(--green);color:var(--green);font-weight:700}
@@ -47,14 +47,18 @@ const CSS = `
 .pop p,.pop li{font-size:12px;line-height:1.5;color:#333}
 .pop ul{padding-left:18px;margin:6px 0}
 
-/* sticky bottom actions：手機 48px；桌機 36px（A-2） */
+/* 手機底部操作列：手機顯示、桌機隱藏；含「複製」「回頂」 */
 .fabBar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #e5e5e5;padding:10px 12px;display:flex;gap:10px;justify-content:space-between}
 .fabBar .btn,.fabBar .ghost{flex:1;height:48px;border-radius:12px;border:1px solid var(--gold);background:var(--green);color:#fff;font-weight:800}
 .fabBar .ghost{border-color:#ddd;background:#fff;color:#333}
 .fabBar .btn[disabled]{opacity:.5;cursor:not-allowed}
-@media (min-width:769px){
-  .fabBar .btn,.fabBar .ghost{height:36px;font-size:13px;border-radius:10px}
-}
+@media (min-width:769px){ .fabBar{display:none} } /* 桌機不顯示整條底欄 */
+
+/* 桌機懸浮回頂小鈕（右側） */
+.floatTop{position:fixed;right:16px;bottom:20px;width:42px;height:42px;border-radius:50%;border:1px solid #ddd;background:#fff;box-shadow:0 4px 16px rgba(0,0,0,.1);cursor:pointer;display:none}
+.floatTop span{display:block;text-align:center;line-height:42px;font-size:18px}
+@media (min-width:769px){ .floatTop{display:block} } /* 只在桌機顯示 */
+
 @media (max-width:768px){
   .grid{grid-template-columns:1fr}
   .row2,.row3{grid-template-columns:1fr}
@@ -65,13 +69,35 @@ const CSS = `
 const PLATFORMS = ["Facebook", "Instagram", "LinkedIn", "X(Twitter)", "TikTok", "LINE OA"];
 const PLATFORM_LIMITS = { "Facebook": 63000, "Instagram": 2200, "LinkedIn": 3000, "X(Twitter)": 280, "TikTok": 2200, "LINE OA": 5000 };
 
+/* 平台對應「篇幅」選單（短/中/長） */
+const LENGTH_PRESETS = {
+  "Facebook": [
+    "短（120–200字）","中（300–600字）","長（800–1500字）"
+  ],
+  "Instagram": [
+    "短（80–140字）","中（150–300字）","長（500–1000字）"
+  ],
+  "LinkedIn": [
+    "短（140–250字）","中（300–800字）","長（1200–2000字）"
+  ],
+  "X(Twitter)": [
+    "短（70–120字）","中（140–220字）","長（240–280字）"
+  ],
+  "TikTok": [
+    "短（80–120字）","中（150–300字）","長（400–600字）"
+  ],
+  "LINE OA": [
+    "短（80–120字）","中（150–300字）","長（400–800字）"
+  ]
+};
+
 const FRAMEWORKS = ["AIDA", "PAS", "BAB", "FAB", "StoryBrand", "4U"]; // 單選
 const HOOKS = ["數據型", "提問型", "故事型", "反直覺", "清單句"]; // 單選
 const FUNNEL = ["TOFU","MOFU","BOFU"];
 const AWARENESS = ["不知情","問題覺察","解法覺察","產品覺察","最覺察"];
 const PERSONS = ["你/妳/您/貴公司","我（第一人稱）","他/她（故事敘述）"]; // 單選
 
-/* 在地化下拉（C：加入歐美；刪 Easter / Back to School） */
+/* 在地化下拉（含「歐美」，去除 Easter/Back to School） */
 const DIALECT_OPTS = ["台灣","香港","日本","歐美"];
 const FESTIVAL_OPTS = [
   "台灣—農曆新年","台灣—端午節","台灣—中秋節","台灣—七夕","台灣—雙11","台灣—雙12",
@@ -80,10 +106,10 @@ const FESTIVAL_OPTS = [
 ];
 const EMOJI_OPTS = ["台灣常用","日系顏文字","歐美極簡","不使用"];
 
-/* 活動情境（仍為多選 chips） */
+/* 活動情境（多選 chips） */
 const SCENARIOS = ["新品上市","限時促銷","節慶行銷","會員專屬活動","實體活動/講座/展會","UGC 徵件","品牌週年/里程碑","案例/見證分享","教育型貼文","互動問答/投票","合作聯名","公益/CSR 活動","自訂","無"];
 
-/* 品牌原型（中文顯示、最多 2 個）+ 預設滑桿（更鮮明版） */
+/* 品牌原型（中文顯示、最多 2 個）+ 更鮮明預設滑桿 */
 const ARCHETYPES = [
   ["Innocent","純真者"],["Everyman","平凡人"],["Hero","英雄"],["Rebel/Outlaw","反叛者"],
   ["Explorer","探索者"],["Creator","創造者"],["Ruler","領導者"],["Magician","魔法師"],
@@ -149,11 +175,12 @@ function InfoPopover({title, children}) {
 /* ================================ 主元件 ================================ */
 export default function SocialCopyGenerator(){
   const [simpleMode, setSimpleMode] = useState(true);
-  const [prompt, setPrompt] = useState(""); // 預設空白（11）
+  const [prompt, setPrompt] = useState(""); // 預設空白
 
   /* 1. 目標與情境 */
   const [goal, setGoal] = useState("");
   const [funnel, setFunnel] = useState("");
+  const [topic, setTopic] = useState(""); // ✅ 新增：這篇文章要講什麼（書/禮物/餐廳…）
   const [scenarios, setScenarios] = useState([]);
   const [deadline, setDeadline] = useState("");
   const [qtyLimit, setQtyLimit] = useState("");
@@ -178,12 +205,12 @@ export default function SocialCopyGenerator(){
   const [followArch, setFollowArch] = useState(true);
   const [style, setStyle] = useState({ 專業度:70, 溫度:70, 幽默感:30, 權威性:60, 活潑度:40, 緊迫感:30, 故事感:60, 說服力:70 });
 
-  /* 4. 平台規格 */
+  /* 4. 平台規格 + 篇幅選單（依平台） */
   const [platform, setPlatform] = useState("Instagram");
   const platformLimit = PLATFORM_LIMITS[platform];
-  const limitTip = `此平台建議不超過 ${platformLimit} 字（僅提醒、不會自動截斷）。`;
-  const [hashtagRatio, setHashtagRatio] = useState("品牌:題材:地區 = 2:5:1");
-  const [hashtagTotal, setHashtagTotal] = useState(6);
+  const platformNote = `平台：${platform}（建議不超過 ${platformLimit} 字；僅提醒，不會自動截斷）`;
+  const lengthOptions = LENGTH_PRESETS[platform] || ["中（120–200字）"];
+  const [lengthSpec, setLengthSpec] = useState(lengthOptions[1] || lengthOptions[0]); // 預設「中」
 
   /* 5. 內容結構（單選） */
   const [framework, setFramework] = useState("AIDA");
@@ -191,18 +218,17 @@ export default function SocialCopyGenerator(){
   const [evidence, setEvidence] = useState({數據:"",案例:"",見證:"",媒體背書:""});
   const [benefitRatio, setBenefitRatio] = useState(70);
   const [ctaStrength, setCtaStrength] = useState("中性");
-  const [lengthSpec, setLengthSpec] = useState("中等（120–200字）");
   const [tone, setTone] = useState("溫暖、專業、優雅"); // 本次貼文微調
 
   /* 7. SEO */
   const [mainKw, setMainKw] = useState("");
   const [secKw, setSecKw] = useState("");
 
-  /* 8. 法遵（移除「性愛」） */
-  const [compliance, setCompliance] = useState({醫療:true,財務:true,保健品:true,未成年:true});
+  /* 8. 法遵（預設全不選） */
+  const [compliance, setCompliance] = useState({醫療:false,財務:false,保健品:false,未成年:false});
   const [claims, setClaims] = useState({比較:false,功效:false}); // 預設關
 
-  /* 9. 實驗與變體（移除差異軸） */
+  /* 9. 實驗與變體（無差異軸） */
   const [variants, setVariants] = useState(3);
   const [creativity, setCreativity] = useState(50);
   const [titleTest, setTitleTest] = useState("短/中/長各一");
@@ -231,7 +257,19 @@ export default function SocialCopyGenerator(){
     if(followArch) setFollowArch(false); // 手動即關閉跟隨
   }
 
+  /* 平台改變時，更新篇幅選單的預設值（取中） */
+  useEffect(()=>{
+    const opts = LENGTH_PRESETS[platform] || [];
+    if(opts.length && !opts.includes(lengthSpec)){
+      setLengthSpec(opts[1] || opts[0]);
+    }
+  }, [platform]);
+
   /* =============================== Prompt 產生 =============================== */
+  function mapLevelText() {
+    return Object.entries(style).map(([k,v])=>`${k}:${mapLevel(v)}(${v})`).join("、");
+  }
+
   function buildPromptNow(){
     const sections = [];
 
@@ -240,10 +278,11 @@ export default function SocialCopyGenerator(){
     if(variants){ mission.push(`請依下列條件，撰寫社群貼文文案（產出 ${variants} 則變體；創意幅度：${mapLevel(creativity)}）。`); }
     if(mission.length) sections.push(["# 任務", mission]);
 
-    // 1 目標與情境
+    // 1 目標與情境（含主題）
     const s1 = [];
     if(goal) s1.push(`轉換目標：${goal}`);
     if(funnel) s1.push(`漏斗位置：${funnel}`);
+    if(topic) s1.push(`主題/主打內容：${topic}`); // ✅ 新增
     if(scenarios.length) s1.push(`活動情境：${scenarios.join("、")}`);
     if(deadline) s1.push(`時效性：截止日 ${deadline}`);
     if(qtyLimit) s1.push(`時效性：限量 ${qtyLimit}，可適度插入「限時/限量」。`);
@@ -254,7 +293,7 @@ export default function SocialCopyGenerator(){
     if(audience) s2.push(`受眾描述：${audience}`);
     if(awareness) s2.push(`受眾成熟度：${awareness}`);
     if(person) s2.push(`人稱：${person}`);
-    if(colloquial!==undefined) s2.push(`口語度：${mapLevel(colloquial)}(${colloquial})`);
+    s2.push(`口語度：${mapLevel(colloquial)}(${colloquial})`);
     const ps = pains.filter(Boolean);
     if(ps.length) s2.push(`痛點/渴望：${ps.join("；")}`);
     if(dialect || festival || emojiStyle){
@@ -264,7 +303,7 @@ export default function SocialCopyGenerator(){
       if(emojiStyle) locBits.push(`Emoji 習慣：${emojiStyle}`);
       if(locBits.length) s2.push(`在地化注意事項：${locBits.join("；")}`);
     }
-    if(s2.length) sections.push(["\n# 受眾", s2]);
+    if(s2.filter(Boolean).length) sections.push(["\n# 受眾", s2]);
 
     // 3 品牌風格
     const s3 = [];
@@ -273,16 +312,15 @@ export default function SocialCopyGenerator(){
     if(positioning) s3.push(`定位：${positioning}`);
     if(proofPoints) s3.push(`證據點：${proofPoints}`);
     if(archetypes.length) s3.push(`品牌原型：${archetypes.join("、")}`);
-    const styleLines = Object.entries(style).map(([k,v])=>`${k}:${mapLevel(v)}(${v})`).join("、");
-    if(styleLines) s3.push(`風格：${styleLines}`);
+    const styleTxt = mapLevelText();
+    if(styleTxt) s3.push(`風格：${styleTxt}`);
     if(noWords && noWords.trim()) s3.push(`禁語清單：${noWords}`);
     if(s3.length) sections.push(["\n# 品牌風格", s3]);
 
-    // 4 平台規格
+    // 4 平台規格（含篇幅選單）
     const s4 = [];
     if(platform) s4.push(`平台：${platform}（建議不超過 ${platformLimit} 字；僅提醒，不會自動截斷）`);
-    if(hashtagRatio) s4.push(`Hashtag 策略：${hashtagRatio}`);
-    if(hashtagTotal) s4.push(`Hashtag 總數：${hashtagTotal}`);
+    if(lengthSpec) s4.push(`篇幅：${lengthSpec}`);
     if(s4.length) sections.push(["\n# 平台規格", s4]);
 
     // 5 內容結構
@@ -291,32 +329,28 @@ export default function SocialCopyGenerator(){
     if(hook) s5.push(`鉤子類型：${hook}`);
     const ev = Object.entries(evidence).filter(([,v])=>v && v.trim()).map(([k,v])=>`${k}：${v.trim()}`);
     if(ev.length) s5.push(`證據模塊（由使用者提供，需真實）：${ev.join("；")}`);
-    if(benefitRatio!==undefined) s5.push(`益處/功能比例：${benefitRatio}:${100-benefitRatio}`);
+    s5.push(`益處/功能比例：${benefitRatio}:${100-benefitRatio}`);
     if(ctaStrength) s5.push(`CTA 強度：${ctaStrength}`);
-    if(lengthSpec) s5.push(`篇幅：${lengthSpec}`);
     if(mainKw || secKw) s5.push(`SEO：${mainKw?`主關鍵字「${mainKw}」`:""}${mainKw&&secKw?"；":""}${secKw?`次關鍵字「${secKw}」`:""}（文首 140 字內前置）`);
     if(tone) s5.push(`語氣（本次微調）：${tone}`);
-    if(s5.length) sections.push(["\n# 內容結構", s5]);
+    if(s5.filter(Boolean).length) sections.push(["\n# 內容結構", s5]);
 
-    // 8 法遵
+    // 8 法遵（預設全不選）
     const s8 = [];
     const compOn = Object.entries(compliance).filter(([,v])=>v).map(([k])=>k);
     if(compOn.length) s8.push(`產業規範注意：${compOn.join("、")}（必要時加註免責/避免醫療或財務建議）。`);
     s8.push(`宣稱開關：比較=${claims.比較?"開":"關"}；功效=${claims.功效?"開":"關"}（預設關）。`);
     if(s8.filter(Boolean).length) sections.push(["\n# 法遵與風險控管", s8]);
 
-    // 輸出格式（僅當前面有任何內容時才加）
-    if(sections.length){
-      const out = [
-        "- 產出貼文以 \"---\" 分隔。",
-        "- 每則包含：標題、開頭鉤子、內文（依所選框架）、Hashtags（依比例分佈）。",
-        "- 嚴禁違法與禁語；無法驗證的證據請標示為「示例」或移除。"
-      ];
-      sections.push(["\n# 輸出格式", out]);
-    }
-
     if(!sections.length) return ""; // 全空則維持空白
-    // 串成文字
+
+    const outFmt = [
+      "- 產出貼文以 \"---\" 分隔。",
+      "- 每則包含：標題、開頭鉤子、內文（依所選框架）、Hashtags（依比例分佈）。",
+      "- 嚴禁違法與禁語；無法驗證的證據請標示為「示例」或移除。"
+    ];
+    sections.push(["\n# 輸出格式", outFmt]);
+
     const lines = [];
     sections.forEach(([title, arr])=>{
       if(arr.length){
@@ -330,8 +364,6 @@ export default function SocialCopyGenerator(){
   function handleGenerate(){ setPrompt(buildPromptNow()); }
   function handleCopy(){ if(prompt) navigator.clipboard?.writeText(prompt); }
   function toTop(){ window.scrollTo({top:0,behavior:"smooth"}); }
-
-  const platformNote = `平台：${platform}（建議不超過 ${platformLimit} 字；僅提醒，不會自動截斷）`;
 
   return (
     <div className="builder">
@@ -355,53 +387,54 @@ export default function SocialCopyGenerator(){
                 <div className="labelRow"><span className="label">品牌名稱</span></div>
                 <input className="input" value={brandName} onChange={e=>setBrandName(e.target.value)} placeholder="你的品牌"/>
 
+                <div className="labelRow"><span className="label">主題/主打內容</span></div>
+                <input className="input" value={topic} onChange={e=>setTopic(e.target.value)} placeholder="這篇文章主要在講什麼？例如：新書推薦、禮物清單、餐廳介紹"/>
+
                 <div className="labelRow"><span className="label">受眾描述</span></div>
-                <input className="input" value={audience} onChange={e=>setAudience(e.target.value)} placeholder="例：25-40 歲、注重效率與質感"/>
+                <input className="input" value={audience} onChange={e=>setAudience(e.target.value)} placeholder="例：25–40 歲、注重效率與質感"/>
 
                 <div className="row2">
                   <div>
-                    <div className="labelRow">
-                      <span className="label">平台</span>
-                      <InfoPopover title="平台建議字數">{platformNote}</InfoPopover>
-                    </div>
+                    <div className="labelRow"><span className="label">平台</span></div>
                     <select className="select" value={platform} onChange={e=>setPlatform(e.target.value)}>
                       {PLATFORMS.map(p=><option key={p} value={p}>{p}</option>)}
                     </select>
+                    <div className="info" style={{marginTop:6}}>{platformNote}</div>
                   </div>
+                  <div>
+                    <div className="labelRow"><span className="label">篇幅（依平台）</span></div>
+                    <select className="select" value={lengthSpec} onChange={e=>setLengthSpec(e.target.value)}>
+                      {lengthOptions.map(opt=><option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="row2">
                   <div>
                     <div className="labelRow"><span className="label">框架</span></div>
                     <select className="select" value={framework} onChange={e=>setFramework(e.target.value)}>
                       {FRAMEWORKS.map(f=><option key={f} value={f}>{f}</option>)}
                     </select>
                   </div>
-                </div>
-
-                <div className="row2">
                   <div>
                     <div className="labelRow"><span className="label">鉤子</span></div>
                     <select className="select" value={hook} onChange={e=>setHook(e.target.value)}>
                       {HOOKS.map(h=><option key={h} value={h}>{h}</option>)}
                     </select>
                   </div>
+                </div>
+
+                <div className="row2">
                   <div>
                     <div className="labelRow"><span className="label">CTA 強度</span></div>
                     <select className="select" value={ctaStrength} onChange={e=>setCtaStrength(e.target.value)}>{["柔和","中性","強烈"].map(x=><option key={x}>{x}</option>)}</select>
                   </div>
-                </div>
-
-                <div className="labelRow"><span className="label">語氣（本次微調）</span></div>
-                <input className="input" value={tone} onChange={e=>setTone(e.target.value)} placeholder="例：溫暖、專業、優雅"/>
-
-                <div className="row2">
                   <div>
-                    <div className="labelRow"><span className="label">篇幅</span></div>
-                    <input className="input" value={lengthSpec} onChange={e=>setLengthSpec(e.target.value)} placeholder="例：中等（120–200字）"/>
-                  </div>
-                  <div>
-                    <div className="labelRow"><span className="label">Hashtag 比例</span></div>
-                    <input className="input" value={hashtagRatio} onChange={e=>setHashtagRatio(e.target.value)} placeholder="品牌:題材:地區 = 2:5:1"/>
+                    <div className="labelRow"><span className="label">語氣（本次微調）</span></div>
+                    <input className="input" value={tone} onChange={e=>setTone(e.target.value)} placeholder="例：溫暖、專業、優雅"/>
                   </div>
                 </div>
+
               </div>
             </div>
 
@@ -412,7 +445,6 @@ export default function SocialCopyGenerator(){
                   <button className="modeBtn" onClick={handleCopy} disabled={!prompt} style={{background:"#fff",color:"#333",border:"1px solid #ddd"}}>複製 Prompt</button>
                 </div>
                 <div className="output">{prompt}</div>
-                <div className="info" style={{marginTop:8}}>{platformNote}</div>
               </div>
             </div>
           </div>
@@ -447,27 +479,37 @@ export default function SocialCopyGenerator(){
                 </div>
               </div>
 
-              <div style={{marginTop:8}}>
-                <div className="labelRow"><span className="label">活動情境（多選）</span></div>
-                <Chips options={SCENARIOS} value={scenarios} onChange={setScenarios}/>
+              <div className="row2" style={{marginTop:8}}>
+                <div>
+                  <div className="labelRow"><span className="label">主題/主打內容</span></div>
+                  <input className="input" value={topic} onChange={e=>setTopic(e.target.value)} placeholder="這篇文章主要在講什麼？例如：新書推薦、禮物清單、餐廳介紹"/>
+                </div>
+                <div>
+                  <div className="labelRow"><span className="label">活動情境（多選）</span></div>
+                  <Chips options={SCENARIOS} value={scenarios} onChange={setScenarios}/>
+                </div>
               </div>
 
-              <div className="row2" style={{marginTop:8}}>
+              <div className="row3" style={{marginTop:8}}>
                 <div>
                   <div className="labelRow"><span className="label">限量（數量）</span></div>
                   <input className="input" value={qtyLimit} onChange={e=>setQtyLimit(e.target.value)} placeholder="例：100 組"/>
                 </div>
                 <div>
-                  <div className="labelRow">
-                    <span className="label">平台</span>
-                    <InfoPopover title="平台建議字數">{platformNote}</InfoPopover>
-                  </div>
+                  <div className="labelRow"><span className="label">平台</span></div>
                   <select className="select" value={platform} onChange={e=>setPlatform(e.target.value)}>{PLATFORMS.map(p=><option key={p}>{p}</option>)}</select>
+                  <div className="info" style={{marginTop:6}}>{platformNote}</div>
+                </div>
+                <div>
+                  <div className="labelRow"><span className="label">篇幅（依平台）</span></div>
+                  <select className="select" value={lengthSpec} onChange={e=>setLengthSpec(e.target.value)}>
+                    {lengthOptions.map(opt=><option key={opt} value={opt}>{opt}</option>)}
+                  </select>
                 </div>
               </div>
             </details>
 
-            {/* 2 受眾精細化（人稱改單選；在地化三下拉） */}
+            {/* 2 受眾精細化（人稱單選；在地化三下拉） */}
             <details className="card">
               <summary><b>2) 受眾精細化</b></summary>
               <div className="row3" style={{marginTop:8}}>
@@ -608,24 +650,24 @@ export default function SocialCopyGenerator(){
               </div>
             </details>
 
-            {/* 4 平台規格 */}
+            {/* 4 平台規格（含篇幅選單） */}
             <details className="card">
               <summary><b>4) 平台規格</b></summary>
               <div className="row3" style={{marginTop:8}}>
                 <div>
-                  <div className="labelRow">
-                    <span className="label">平台</span>
-                    <InfoPopover title="平台建議字數">{platformNote}</InfoPopover>
-                  </div>
+                  <div className="labelRow"><span className="label">平台</span></div>
                   <select className="select" value={platform} onChange={e=>setPlatform(e.target.value)}>{PLATFORMS.map(p=><option key={p}>{p}</option>)}</select>
+                  <div className="info" style={{marginTop:6}}>{platformNote}</div>
                 </div>
                 <div>
-                  <div className="labelRow"><span className="label">Hashtag 比例</span></div>
-                  <input className="input" value={hashtagRatio} onChange={e=>setHashtagRatio(e.target.value)} placeholder="品牌:題材:地區 = 2:5:1"/>
+                  <div className="labelRow"><span className="label">篇幅（依平台）</span></div>
+                  <select className="select" value={lengthSpec} onChange={e=>setLengthSpec(e.target.value)}>
+                    {lengthOptions.map(opt=><option key={opt} value={opt}>{opt}</option>)}
+                  </select>
                 </div>
                 <div>
-                  <div className="labelRow"><span className="label">Hashtag 總數（可選）</span></div>
-                  <input type="number" min={0} max={20} className="input" value={hashtagTotal} onChange={e=>setHashtagTotal(Number(e.target.value)||0)}/>
+                  <div className="labelRow"><span className="label">（選填）Hashtag 提示</span></div>
+                  <input className="input" placeholder="例如：品牌:題材:地區 = 2:5:1"/>
                 </div>
               </div>
               <div className="info" style={{marginTop:6}}>
@@ -660,14 +702,15 @@ export default function SocialCopyGenerator(){
 
               <div className="row2">
                 <div>
-                  <div className="labelRow"><span className="label">篇幅</span></div>
-                  <input className="input" value={lengthSpec} onChange={e=>setLengthSpec(e.target.value)} placeholder="短/中/長 或字數範圍"/>
                   <div className="labelRow"><span className="label">CTA 強度</span></div>
                   <select className="select" value={ctaStrength} onChange={e=>setCtaStrength(e.target.value)}>{["柔和","中性","強烈"].map(x=><option key={x}>{x}</option>)}</select>
+                  <div className="labelRow" style={{marginTop:10}}><span className="label">益處 vs 功能</span></div>
+                  <SliderRow label="比例（左益處/右功能）" value={benefitRatio} setValue={setBenefitRatio}/>
                 </div>
                 <div>
-                  <div className="labelRow"><span className="label">益處 vs 功能</span></div>
-                  <SliderRow label="比例（左益處/右功能）" value={benefitRatio} setValue={setBenefitRatio}/>
+                  <div className="labelRow"><span className="label">語氣（本次微調）</span></div>
+                  <input className="input" value={tone} onChange={e=>setTone(e.target.value)} placeholder="例：更活潑/更權威/更溫暖"/>
+                  <div className="info" style={{marginTop:6}}>說明：<b>品牌風格滑桿</b>＝長期調性；<b>語氣</b>＝本次貼文微調。</div>
                 </div>
               </div>
 
@@ -676,13 +719,11 @@ export default function SocialCopyGenerator(){
                   <div className="labelRow"><span className="label">證據模塊（可填 0–2）</span></div>
                   <textarea className="textarea" rows={3} value={evidence.數據} onChange={e=>setEvidence({...evidence,數據:e.target.value})} placeholder="數據（來源/時間）"/>
                   <textarea className="textarea" rows={3} value={evidence.案例} onChange={e=>setEvidence({...evidence,案例:e.target.value})} placeholder="案例"/>
-                  <textarea className="textarea" rows={3} value={evidence.見證} onChange={e=>setEvidence({...evidence,見證:e.target.value})} placeholder="客戶見證"/>
-                  <textarea className="textarea" rows={3} value={evidence.媒體背書} onChange={e=>setEvidence({...evidence,媒體背書:e.target.value})} placeholder="媒體背書"/>
                 </div>
                 <div>
-                  <div className="labelRow"><span className="label">語氣（本次微調）</span></div>
-                  <input className="input" value={tone} onChange={e=>setTone(e.target.value)} placeholder="例：更活潑/更權威/更溫暖"/>
-                  <div className="info" style={{marginTop:6}}>說明：<b>品牌風格滑桿</b>＝長期調性；<b>語氣</b>＝本次貼文微調。</div>
+                  <div className="labelRow" style={{visibility:"hidden"}}><span className="label">占位</span></div>
+                  <textarea className="textarea" rows={3} value={evidence.見證} onChange={e=>setEvidence({...evidence,見證:e.target.value})} placeholder="客戶見證"/>
+                  <textarea className="textarea" rows={3} value={evidence.媒體背書} onChange={e=>setEvidence({...evidence,媒體背書:e.target.value})} placeholder="媒體背書"/>
                 </div>
               </div>
 
@@ -702,12 +743,12 @@ export default function SocialCopyGenerator(){
               </div>
             </details>
 
-            {/* 8 法遵（移除「性愛」） */}
+            {/* 8 法遵（預設全不選；移除「性愛」） */}
             <details className="card">
               <summary><b>8) 法遵與風險控管</b></summary>
               <div className="row3" style={{marginTop:8}}>
                 <div>
-                  <div className="labelRow"><span className="label">產業規範（預設勾選）</span></div>
+                  <div className="labelRow"><span className="label">產業規範（預設不勾選）</span></div>
                   {Object.keys(compliance).map(k=>(
                     <label key={k} style={{display:"block",fontSize:13}}>
                       <input type="checkbox" checked={compliance[k]} onChange={()=>toggleObj(compliance,k,setCompliance)}/> {k}
@@ -754,17 +795,21 @@ export default function SocialCopyGenerator(){
                 <button className="modeBtn" onClick={handleCopy} disabled={!prompt} style={{background:"#fff",color:"#333",border:"1px solid #ddd"}}>複製 Prompt</button>
               </div>
               <div className="output">{prompt}</div>
-              <div className="info" style={{marginTop:8}}>{platformNote}</div>
             </div>
           </div>
         )}
       </div>
 
-      {/* 底部固定操作列（A-2：桌機縮小保留；手機 48px） */}
-      <div className="fabBar" aria-label="mobile/desktop actions" role="group">
+      {/* 手機：底部固定操作列（保留「複製」「回頂」） */}
+      <div className="fabBar" aria-label="mobile actions" role="group">
         <button className="btn" onClick={handleCopy} disabled={!prompt}>複製 Prompt</button>
-        <button className="ghost" onClick={toTop}>回到頂端</button>
+        <button className="ghost" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}>回到頂端</button>
       </div>
+
+      {/* 桌機：懸浮回頂小鈕（右側） */}
+      <button className="floatTop" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})} title="回到頂端" aria-label="回到頂端">
+        <span>↑</span>
+      </button>
     </div>
   );
 }
