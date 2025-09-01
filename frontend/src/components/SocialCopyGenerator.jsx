@@ -1,6 +1,6 @@
 ﻿import React, { useMemo, useState, useEffect } from "react";
 
-/** 純前端 Prompt Builder（手機優化、名詞解釋、原型預設、單選規則、平台篇幅選單、主題欄位） */
+/** 純前端 Prompt Builder（手機優化、名詞解釋、原型預設、單選規則、平台篇幅選單、主題欄位 + 來源素材改寫） */
 const BRAND_BYLINE = "陳沛孺《用AI打造素人影響力》作者";
 
 /* =============================== 內嵌 CSS =============================== */
@@ -185,6 +185,10 @@ export default function SocialCopyGenerator(){
   const [deadline, setDeadline] = useState("");
   const [qtyLimit, setQtyLimit] = useState("");
 
+  /* 來源素材（使用者貼文 → 改寫） */
+  const [sourceText, setSourceText] = useState("");        // ✅ 新增
+  const [rewriteStrict, setRewriteStrict] = useState(70);  // ✅ 新增：改寫幅度（保留事實、重寫語句）
+
   /* 2. 受眾精細化 */
   const [awareness, setAwareness] = useState("");
   const [pains, setPains] = useState(["","",""]);
@@ -282,11 +286,25 @@ export default function SocialCopyGenerator(){
     const s1 = [];
     if(goal) s1.push(`轉換目標：${goal}`);
     if(funnel) s1.push(`漏斗位置：${funnel}`);
-    if(topic) s1.push(`主題/主打內容：${topic}`); // ✅ 新增
+    if(topic) s1.push(`主題/主打內容：${topic}`);
     if(scenarios.length) s1.push(`活動情境：${scenarios.join("、")}`);
     if(deadline) s1.push(`時效性：截止日 ${deadline}`);
     if(qtyLimit) s1.push(`時效性：限量 ${qtyLimit}，可適度插入「限時/限量」。`);
     if(s1.length) sections.push(["\n# 目標與情境", s1]);
+
+    // ✅ 來源素材（原文 → 改寫）
+    if(sourceText && sourceText.trim()){
+      const guide = [
+        `改寫規則：在不抄襲的前提下，依本任務所有參數重寫；可重組段落／改寫語句／補上銜接，保留可驗證的事實、數據與專有名詞；移除個資與敏感資訊。`,
+        `改寫幅度：${rewriteStrict}%（數值越高，語句與結構改動越大；仍需維持原文重點與事實正確）。`,
+        `如來源素材不足以支撐所選框架的段落，請以「（示例）」標示補充處，避免杜撰。`,
+      ];
+      sections.push(["\n# 來源素材（供改寫使用）", guide.concat([
+        "＜原文開始＞",
+        sourceText.trim(),
+        "＜原文結束＞",
+      ])]);
+    }
 
     // 2 受眾
     const s2 = [];
@@ -347,6 +365,7 @@ export default function SocialCopyGenerator(){
     const outFmt = [
       "- 產出貼文以 \"---\" 分隔。",
       "- 每則包含：標題、開頭鉤子、內文（依所選框架）、Hashtags（依比例分佈）。",
+      "- 若有「來源素材」，必須以其為主體進行改寫（避免逐句同義改寫造成抄襲相似度過高），保留可驗證事實並加強結構與CTA。",
       "- 嚴禁違法與禁語；無法驗證的證據請標示為「示例」或移除。"
     ];
     sections.push(["\n# 輸出格式", outFmt]);
@@ -363,7 +382,6 @@ export default function SocialCopyGenerator(){
 
   function handleGenerate(){ setPrompt(buildPromptNow()); }
   function handleCopy(){ if(prompt) navigator.clipboard?.writeText(prompt); }
-  function toTop(){ window.scrollTo({top:0,behavior:"smooth"}); }
 
   return (
     <div className="builder">
@@ -389,6 +407,19 @@ export default function SocialCopyGenerator(){
 
                 <div className="labelRow"><span className="label">主題/主打內容</span></div>
                 <input className="input" value={topic} onChange={e=>setTopic(e.target.value)} placeholder="這篇文章主要在講什麼？例如：新書推薦、禮物清單、餐廳介紹"/>
+
+                {/* ✅ 新增：來源素材（貼原文就能改寫） */}
+                <div className="labelRow">
+                  <span className="label">來源素材（貼上原文，可選）</span>
+                  <InfoPopover title="如何使用？">
+                    <p>把你想改寫的文章貼進來；系統會依你設定的品牌/框架/平台等參數重寫。</p>
+                    <p>下方可調整「改寫幅度」：越高表示語句與結構改動越大，但會保留事實。</p>
+                  </InfoPopover>
+                </div>
+                <textarea className="textarea" rows={8} value={sourceText} onChange={e=>setSourceText(e.target.value)} placeholder="在這裡貼上你的文章（可包含重點、段落、數據、引文來源等）"/>
+                <div style={{marginTop:8}}>
+                  <SliderRow label="改寫幅度" value={rewriteStrict} setValue={setRewriteStrict}/>
+                </div>
 
                 <div className="labelRow"><span className="label">受眾描述</span></div>
                 <input className="input" value={audience} onChange={e=>setAudience(e.target.value)} placeholder="例：25–40 歲、注重效率與質感"/>
@@ -509,7 +540,7 @@ export default function SocialCopyGenerator(){
               </div>
             </details>
 
-            {/* 2 受眾精細化（人稱單選；在地化三下拉） */}
+            {/* 2 受眾精細化 */}
             <details className="card">
               <summary><b>2) 受眾精細化</b></summary>
               <div className="row3" style={{marginTop:8}}>
@@ -583,7 +614,7 @@ export default function SocialCopyGenerator(){
               </div>
             </details>
 
-            {/* 3 品牌風格（改名；原型中文可複選至多 2） */}
+            {/* 3 品牌風格 */}
             <details className="card">
               <summary><b>3) 品牌風格</b></summary>
               <div className="row3" style={{marginTop:8}}>
@@ -650,7 +681,7 @@ export default function SocialCopyGenerator(){
               </div>
             </details>
 
-            {/* 4 平台規格（含篇幅選單） */}
+            {/* 4 平台規格 */}
             <details className="card">
               <summary><b>4) 平台規格</b></summary>
               <div className="row3" style={{marginTop:8}}>
@@ -682,7 +713,7 @@ export default function SocialCopyGenerator(){
               </div>
             </details>
 
-            {/* 5 內容結構（框架/鉤子單選；語氣說明） */}
+            {/* 5 內容結構 */}
             <details className="card">
               <summary><b>5) 內容結構</b></summary>
               <div className="row2" style={{marginTop:8}}>
@@ -709,7 +740,7 @@ export default function SocialCopyGenerator(){
                 </div>
                 <div>
                   <div className="labelRow"><span className="label">語氣（本次微調）</span></div>
-                  <input className="input" value={tone} onChange={e=>setTone(e.target.value)} placeholder="例：更活潑/更權威/更溫暖"/>
+                  <input className="input" value={tone} onChange={e=>setTone(e.target.value)} placeholder="例：更玩味/更權威/更溫暖"/>
                   <div className="info" style={{marginTop:6}}>說明：<b>品牌風格滑桿</b>＝長期調性；<b>語氣</b>＝本次貼文微調。</div>
                 </div>
               </div>
@@ -734,6 +765,21 @@ export default function SocialCopyGenerator(){
               </div>
             </details>
 
+            {/* ✅ 6 來源素材（貼原文 → 改寫） */}
+            <details className="card">
+              <summary><b>6) 來源素材（貼上原文）</b></summary>
+              <div className="labelRow">
+                <span className="label">把要改寫的文章貼在這裡</span>
+                <InfoPopover title="改寫原則">
+                  <p>保留事實、數據與專有名詞；允許重組結構與語句，避免抄襲；不足之處以「（示例）」標示，不要杜撰。</p>
+                </InfoPopover>
+              </div>
+              <textarea className="textarea" rows={10} value={sourceText} onChange={e=>setSourceText(e.target.value)} placeholder="貼上你的文章、逐字稿、重點彙整……"/>
+              <div style={{marginTop:8}}>
+                <SliderRow label="改寫幅度" value={rewriteStrict} setValue={setRewriteStrict}/>
+              </div>
+            </details>
+
             {/* 7 SEO */}
             <details className="card">
               <summary><b>7) SEO / 可發現性</b></summary>
@@ -743,7 +789,7 @@ export default function SocialCopyGenerator(){
               </div>
             </details>
 
-            {/* 8 法遵（預設全不選；移除「性愛」） */}
+            {/* 8 法遵 */}
             <details className="card">
               <summary><b>8) 法遵與風險控管</b></summary>
               <div className="row3" style={{marginTop:8}}>
@@ -767,7 +813,7 @@ export default function SocialCopyGenerator(){
               </div>
             </details>
 
-            {/* 9 實驗與變體（無差異軸） */}
+            {/* 9 實驗與變體 */}
             <details className="card">
               <summary><b>9) 實驗與變體</b></summary>
               <div className="row3" style={{marginTop:8}}>
@@ -800,13 +846,13 @@ export default function SocialCopyGenerator(){
         )}
       </div>
 
-      {/* 手機：底部固定操作列（保留「複製」「回頂」） */}
+      {/* 手機：底部固定操作列 */}
       <div className="fabBar" aria-label="mobile actions" role="group">
         <button className="btn" onClick={handleCopy} disabled={!prompt}>複製 Prompt</button>
         <button className="ghost" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}>回到頂端</button>
       </div>
 
-      {/* 桌機：懸浮回頂小鈕（右側） */}
+      {/* 桌機：懸浮回頂小鈕 */}
       <button className="floatTop" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})} title="回到頂端" aria-label="回到頂端">
         <span>↑</span>
       </button>
